@@ -1,0 +1,30 @@
+name: Deploy to cPanel with SFTP
+
+on:
+  push:
+    branches:
+      - main #
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build Project
+        run: npm run build
+
+      - name: Deploy to cPanel via SFTP with rsync
+        env:
+          DEPLOY_HOST: ${{ secrets.SFTP_SERVER }}
+          DEPLOY_USER: ${{ secrets.SFTP_USERNAME }}
+          DEPLOY_PASSWORD: ${{ secrets.SFTP_PASSWORD }}
+          DEPLOY_PATH: ${{ secrets.SFTP_DEPLOY_PATH }}
+        run: |
+          sudo apt-get update && sudo apt-get install -y sshpass
+          sshpass -p "$DEPLOY_PASSWORD" rsync -avz -e "ssh -o StrictHostKeyChecking=no" --exclude '.git' --exclude 'node_modules' --exclude '.env' ./ $DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH
